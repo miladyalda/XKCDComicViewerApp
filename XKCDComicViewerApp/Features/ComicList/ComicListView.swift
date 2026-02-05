@@ -31,10 +31,24 @@ struct ComicListView: View {
                     ToolbarItem(placement: .primaryAction) {
                         randomButton
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        explanationLink
+                    }
                 }
         }
         .task {
             await viewModel.fetchLatestComic()
+        }
+    }
+
+    // MARK: - Subviews
+
+    @ViewBuilder
+    private var explanationLink: some View {
+        if case .loaded(let comic) = viewModel.state {
+            NavigationLink(Strings.ComicExplanation.title) {
+                ExplanationView(comicNumber: comic.id)
+            }
         }
     }
 
@@ -44,32 +58,22 @@ struct ComicListView: View {
     private var contentView: some View {
         switch viewModel.state {
         case .idle:
-            idleView
+            Color.clear
 
         case .loading:
-            loadingView
+            LoadingView(message: Strings.Common.loading)
 
         case .loaded(let comic):
             comicView(comic: comic)
 
         case .error(let message):
-            errorView(message: message)
-        }
-    }
-
-    // MARK: - Idle View
-
-    private var idleView: some View {
-        Color.clear
-    }
-
-    // MARK: - Loading View
-
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-            Text(Strings.ComicList.loading)
-                .foregroundStyle(.secondary)
+            ErrorView(
+                title: Strings.Errors.generic,
+                message: message,
+                retryTitle: Strings.Common.retryButton
+            ) {
+                Task { await viewModel.fetchLatestComic() }
+            }
         }
     }
 
@@ -80,14 +84,22 @@ struct ComicListView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     comicHeader(comic: comic)
-                    comicImage(comic: comic)
+                    ComicImageView(url: comic.imageURL)
                     comicDescription(comic: comic)
                 }
                 .padding()
             }
 
             Divider()
-            navigationBar
+
+            ComicNavigationBar(
+                canGoPrevious: viewModel.canGoPrevious,
+                canGoNext: viewModel.canGoNext,
+                onFirst: { Task { await viewModel.fetchFirstComic() } },
+                onPrevious: { Task { await viewModel.fetchPreviousComic() } },
+                onNext: { Task { await viewModel.fetchNextComic() } },
+                onLatest: { Task { await viewModel.fetchLatestComic() } }
+            )
         }
     }
 
@@ -104,76 +116,12 @@ struct ComicListView: View {
         }
     }
 
-    private func comicImage(comic: Comic) -> some View {
-        ComicImageView(url: comic.imageURL)
-    }
-
     private func comicDescription(comic: Comic) -> some View {
         Text(comic.description)
             .font(.body)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .padding(.horizontal)
-    }
-
-    // MARK: - Navigation Bar
-
-    private var navigationBar: some View {
-        HStack(spacing: 12) {
-            navigationButton(
-                title: Strings.ComicList.firstButton,
-                systemImage: Icons.firstComic,
-                isEnabled: viewModel.canGoPrevious
-            ) {
-                Task { await viewModel.fetchFirstComic() }
-            }
-
-            navigationButton(
-                title: Strings.ComicList.previousButton,
-                systemImage: Icons.previousComic,
-                isEnabled: viewModel.canGoPrevious
-            ) {
-                Task { await viewModel.fetchPreviousComic() }
-            }
-
-            Spacer()
-
-            navigationButton(
-                title: Strings.ComicList.nextButton,
-                systemImage: Icons.nextComic,
-                isEnabled: viewModel.canGoNext
-            ) {
-                Task { await viewModel.fetchNextComic() }
-            }
-
-            navigationButton(
-                title: Strings.ComicList.latestButton,
-                systemImage: Icons.latestComic,
-                isEnabled: viewModel.canGoNext
-            ) {
-                Task { await viewModel.fetchLatestComic() }
-            }
-        }
-        .padding()
-        .background(.bar)
-    }
-
-    private func navigationButton(
-        title: String,
-        systemImage: String,
-        isEnabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: systemImage)
-                    .font(.title3)
-                Text(title)
-                    .font(.caption2)
-            }
-        }
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1.0 : 0.4)
     }
 
     // MARK: - Random Button
@@ -184,30 +132,6 @@ struct ComicListView: View {
         } label: {
             Image(systemName: Icons.shuffle)
         }
-    }
-
-    // MARK: - Error View
-
-    private func errorView(message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: Icons.error)
-                .font(.largeTitle)
-                .foregroundStyle(.red)
-
-            Text(Strings.ComicList.errorTitle)
-                .font(.headline)
-
-            Text(message)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button(Strings.ComicList.retryButton) {
-                Task { await viewModel.fetchLatestComic() }
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
     }
 }
 

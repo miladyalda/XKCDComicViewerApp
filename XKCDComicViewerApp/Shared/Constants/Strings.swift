@@ -17,13 +17,18 @@ enum Strings {
         static let title = "XKCD Comics"
     }
 
+    // MARK: - Common
+
+    enum Common {
+        static let loading = "Loading..."
+        static let retryButton = "Try Again"
+    }
+
     // MARK: - ComicList
 
     enum ComicList {
         static let title = "Comics"
-        static let loading = "Loading comic..."
-        static let errorTitle = "Oops!"
-        static let retryButton = "Try Again"
+        static let loadingComic = "Loading comic..."
         static let firstButton = "First"
         static let previousButton = "Previous"
         static let nextButton = "Next"
@@ -37,6 +42,12 @@ enum Strings {
         static let descriptionTitle = "Description"
         static let shareButton = "Share"
         static let favoriteButton = "Favorite"
+    }
+
+    // MARK: - ComicExplanation
+
+    enum ComicExplanation {
+        static let title = "Explanation"
     }
 
     // MARK: - Search
