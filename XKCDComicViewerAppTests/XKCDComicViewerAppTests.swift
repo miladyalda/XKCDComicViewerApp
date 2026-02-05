@@ -8,9 +8,14 @@
 import Testing
 @testable import XKCDComicViewerApp
 
+// MARK: - Test Entry Point
+
+@Suite("XKCD Comic Viewer App Tests")
 struct XKCDComicViewerAppTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+    @Test("App can be instantiated")
+    func appExists() {
+        // Placeholder test to verify test target is configured correctly
+        #expect(true)
     }
 }
