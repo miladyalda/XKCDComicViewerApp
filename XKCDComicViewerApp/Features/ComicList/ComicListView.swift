@@ -29,6 +29,9 @@ struct ComicListView: View {
                 .navigationTitle(Strings.ComicList.title)
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
+                        shareLink
+                    }
+                    ToolbarItem(placement: .primaryAction) {
                         randomButton
                     }
                     ToolbarItem(placement: .primaryAction) {
@@ -48,6 +51,17 @@ struct ComicListView: View {
         if case .loaded(let comic) = viewModel.state {
             NavigationLink(Strings.ComicExplanation.title) {
                 ExplanationView(comicNumber: comic.id)
+            }
+        }
+    }
+
+    // MARK: - Share Link
+
+    @ViewBuilder
+    private var shareLink: some View {
+        if case .loaded(let comic) = viewModel.state {
+            ShareLink(item: URL(string: "https://xkcd.com/\(comic.id)")!) {
+                Image(systemName: Icons.share)
             }
         }
     }
