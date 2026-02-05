@@ -34,6 +34,10 @@ XKCDComicViewerApp/
 └── Resources/            # Assets
 ```
 
+## MVP Scope
+
+For the MVP, I prioritized core user value: browsing comics, viewing details with alt text, accessing explanations, and sharing. Features like search, favorites, and push notifications were excluded due to time constraints — search and favorites could be added in the next iteration, while push notifications would require backend infrastructure.
+
 ## Tech Stack
 
 - **Swift 6** with strict concurrency
