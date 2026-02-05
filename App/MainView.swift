@@ -1,0 +1,24 @@
+//
+//  ContentView.swift
+//  XKCDComicViewerApp
+//
+//  Created by milad yalda on 2026-02-05.
+//
+
+import SwiftUI
+
+struct MainView: View {
+    var body: some View {
+        VStack {
+            Image(systemName: "globe")
+                .imageScale(.large)
+                .foregroundStyle(.tint)
+            Text("Hello, world!")
+        }
+        .padding()
+    }
+}
+
+#Preview {
+    MainView()
+}
