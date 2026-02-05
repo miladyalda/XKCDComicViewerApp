@@ -45,14 +45,6 @@ final class MockComicRepository: ComicRepositoryProtocol, @unchecked Sendable {
         return comicToReturn ?? .mock(id: id)
     }
 
-    func searchComics(query: String) async throws -> [Comic] {
-        if let error = errorToThrow {
-            throw error
-        }
-
-        return comicsToReturn
-    }
-
     // MARK: - Test Helpers
 
     func reset() {

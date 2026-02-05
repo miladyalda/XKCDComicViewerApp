@@ -12,7 +12,6 @@ import Foundation
 enum Endpoints {
     case latestComic
     case comic(id: Int)
-    case search(query: String)
 
     // MARK: - Base URL
 
@@ -20,8 +19,6 @@ enum Endpoints {
         switch self {
         case .latestComic, .comic:
             return "https://xkcd.com"
-        case .search:
-            return "https://relevantxkcd.appspot.com"
         }
     }
 
@@ -33,9 +30,6 @@ enum Endpoints {
             return "/info.0.json"
         case .comic(let id):
             return "/\(id)/info.0.json"
-        case .search(let query):
-            let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-            return "/process?action=xkcd&query=\(encodedQuery)"
         }
     }
 

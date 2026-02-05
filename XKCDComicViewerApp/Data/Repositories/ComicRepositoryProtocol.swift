@@ -15,8 +15,4 @@ protocol ComicRepositoryProtocol: Sendable {
 
     /// Fetches a specific comic by its ID
     func getComic(id: Int) async throws -> Comic
-
-    /// Searches for comics by text query
-    /// Returns an array of comics matching the search query
-    func searchComics(query: String) async throws -> [Comic]
 }

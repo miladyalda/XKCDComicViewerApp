@@ -33,32 +33,6 @@ final class ComicRepository: ComicRepositoryProtocol {
         return mapToComic(dto: dto)
     }
 
-    func searchComics(query: String) async throws -> [Comic] {
-        let rawResponse = try await apiClient.fetchRaw(endpoint: .search(query: query))
-        let searchResult = SearchResultDTO.parse(from: rawResponse)
-
-        guard searchResult.isSuccess else {
-            return []
-        }
-
-        // Fetch each comic by ID (limit to first 10 for performance)
-        let comicIds = searchResult.results.prefix(10).map { $0.comicId }
-
-        var comics: [Comic] = []
-
-        for id in comicIds {
-            do {
-                let comic = try await getComic(id: id)
-                comics.append(comic)
-            } catch {
-                // Skip comics that fail to load
-                continue
-            }
-        }
-
-        return comics
-    }
-
     // MARK: - Private Methods
 
     private func mapToComic(dto: ComicDTO) -> Comic {
