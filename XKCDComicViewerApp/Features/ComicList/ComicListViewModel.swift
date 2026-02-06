@@ -18,6 +18,10 @@ final class ComicListViewModel {
     private(set) var state: ViewState<Comic> = .idle
     private(set) var latestComicId: Int?
 
+    // MARK: - Task Management
+
+    private var currentTask: Task<Void, Never>?
+
     // MARK: - Computed Properties
 
     var isLoading: Bool {
@@ -60,28 +64,20 @@ final class ComicListViewModel {
 
     @MainActor
     func fetchLatestComic() async {
-        state = .loading
-
-        do {
-            let comic = try await repository.getLatestComic()
-            latestComicId = comic.id
-            state = .loaded(comic)
-        } catch {
-            state = .error(error.localizedDescription)
-        }
+        await executeCancellableTask(
+            { try await self.repository.getLatestComic() },
+            onSuccess: { [weak self] comic in
+                self?.latestComicId = comic.id
+            }
+        )
     }
 
     @MainActor
     func fetchComic(id: Int) async {
         guard id >= 1 else { return }
 
-        state = .loading
-
-        do {
-            let comic = try await repository.getComic(id: id)
-            state = .loaded(comic)
-        } catch {
-            state = .error(error.localizedDescription)
+        await executeCancellableTask {
+            try await self.repository.getComic(id: id)
         }
     }
 
@@ -113,5 +109,36 @@ final class ComicListViewModel {
 
         let randomId = Int.random(in: 1...latestId)
         await fetchComic(id: randomId)
+    }
+
+    // MARK: - Private Methods
+
+    private func executeCancellableTask(
+        _ operation: @escaping () async throws -> Comic,
+        onSuccess: ((Comic) -> Void)? = nil
+    ) async {
+        cancelCurrentTask()
+
+        currentTask = Task {
+            state = .loading
+
+            do {
+                let comic = try await operation()
+                guard !Task.isCancelled else { return }
+
+                onSuccess?(comic)
+                state = .loaded(comic)
+            } catch {
+                guard !Task.isCancelled else { return }
+                state = .error(error.localizedDescription)
+            }
+        }
+
+        await currentTask?.value
+    }
+
+    private func cancelCurrentTask() {
+        currentTask?.cancel()
+        currentTask = nil
     }
 }

@@ -21,11 +21,20 @@ final class MockComicRepository: ComicRepositoryProtocol, @unchecked Sendable {
     private(set) var getLatestComicCallCount = 0
     private(set) var getComicCallCount = 0
     private(set) var lastRequestedComicId: Int?
+    
+    // MARK: - Task Cancellation Support
+    
+    var shouldDelay = false
+    var delayDuration: TimeInterval = 0.1
 
     // MARK: - ComicRepositoryProtocol
 
     func getLatestComic() async throws -> Comic {
         getLatestComicCallCount += 1
+        
+        if shouldDelay {
+            try? await Task.sleep(for: .seconds(delayDuration))
+        }
 
         if let error = errorToThrow {
             throw error
@@ -37,6 +46,10 @@ final class MockComicRepository: ComicRepositoryProtocol, @unchecked Sendable {
     func getComic(id: Int) async throws -> Comic {
         getComicCallCount += 1
         lastRequestedComicId = id
+        
+        if shouldDelay {
+            try? await Task.sleep(for: .seconds(delayDuration))
+        }
 
         if let error = errorToThrow {
             throw error
@@ -54,5 +67,7 @@ final class MockComicRepository: ComicRepositoryProtocol, @unchecked Sendable {
         getLatestComicCallCount = 0
         getComicCallCount = 0
         lastRequestedComicId = nil
+        shouldDelay = false
+        delayDuration = 0.1
     }
 }

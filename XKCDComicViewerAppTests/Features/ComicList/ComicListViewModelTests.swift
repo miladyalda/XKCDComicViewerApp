@@ -274,3 +274,110 @@ extension ComicListViewModelTests {
         }
     }
 }
+
+// MARK: - Task Cancellation Tests
+
+extension ComicListViewModelTests {
+
+    @Suite("Task Cancellation")
+    struct TaskCancellationTests {
+
+        private let mockRepository = MockComicRepository()
+
+        @Test("Cancels previous task when fetching new comic")
+        @MainActor
+        func cancelsPreviousTaskOnNewFetch() async {
+            let sut = ComicListViewModel(repository: mockRepository)
+            
+            // Set up repository to return different comics with delay
+            mockRepository.comicToReturn = .mock(id: 100, title: "First")
+            mockRepository.shouldDelay = true
+            mockRepository.delayDuration = 0.1
+            
+            // Start first fetch
+            let firstTask = Task {
+                await sut.fetchComic(id: 100)
+            }
+            
+            // Immediately start second fetch (should cancel first)
+            try? await Task.sleep(for: .milliseconds(10))
+            mockRepository.comicToReturn = .mock(id: 200, title: "Second")
+            await sut.fetchComic(id: 200)
+            
+            // Wait for first task to complete
+            await firstTask.value
+            
+            // Should show second comic, not first
+            if case .loaded(let comic) = sut.state {
+                #expect(comic.id == 200)
+                #expect(comic.title == "Second")
+            } else {
+                Issue.record("Expected loaded state with second comic")
+            }
+        }
+
+        @Test("Cancels previous task when navigating rapidly")
+        @MainActor
+        func cancelsPreviousTaskOnRapidNavigation() async {
+            let sut = ComicListViewModel(repository: mockRepository)
+            
+            // Set up initial state
+            mockRepository.comicToReturn = .latestComic
+            await sut.fetchLatestComic()
+            
+            // Simulate rapid button tapping
+            mockRepository.shouldDelay = true
+            mockRepository.delayDuration = 0.05
+            
+            mockRepository.comicToReturn = .mock(id: 3202)
+            let task1 = Task { await sut.fetchPreviousComic() }
+            
+            try? await Task.sleep(for: .milliseconds(10))
+            mockRepository.comicToReturn = .mock(id: 3201)
+            let task2 = Task { await sut.fetchPreviousComic() }
+            
+            try? await Task.sleep(for: .milliseconds(10))
+            mockRepository.comicToReturn = .mock(id: 3200)
+            await sut.fetchPreviousComic()
+            
+            await task1.value
+            await task2.value
+            
+            // Should show only the last comic
+            if case .loaded(let comic) = sut.state {
+                #expect(comic.id == 3200)
+            } else {
+                Issue.record("Expected loaded state with final comic")
+            }
+        }
+
+        @Test("Handles cancellation during latest comic fetch")
+        @MainActor
+        func handlesCancellationDuringLatestFetch() async {
+            let sut = ComicListViewModel(repository: mockRepository)
+            
+            mockRepository.shouldDelay = true
+            mockRepository.delayDuration = 0.1
+            mockRepository.comicToReturn = .latestComic
+            
+            // Start fetch
+            let firstTask = Task {
+                await sut.fetchLatestComic()
+            }
+            
+            // Cancel by starting new fetch
+            try? await Task.sleep(for: .milliseconds(10))
+            mockRepository.comicToReturn = .mock(id: 100)
+            await sut.fetchComic(id: 100)
+            
+            await firstTask.value
+            
+            // Should not have latest comic state
+            if case .loaded(let comic) = sut.state {
+                #expect(comic.id == 100)
+            } else {
+                Issue.record("Expected loaded state with comic 100")
+            }
+        }
+    }
+}
