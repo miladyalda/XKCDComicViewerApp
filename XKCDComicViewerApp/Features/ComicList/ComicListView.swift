@@ -14,6 +14,7 @@ struct ComicListView: View {
     // MARK: - Properties
 
     @State private var viewModel: ComicListViewModel
+    @State private var currentComic: Comic?
 
     // MARK: - Init
 
@@ -42,16 +43,22 @@ struct ComicListView: View {
         .task {
             await viewModel.fetchLatestComic()
         }
+        .onChange(of: viewModel.state) { _, newState in
+            if case .loaded(let comic) = newState {
+                currentComic = comic
+            }
+        }
     }
 
     // MARK: - Subviews
 
     @ViewBuilder
     private var explanationLink: some View {
-        if case .loaded(let comic) = viewModel.state {
+        if let comic = currentComic {
             NavigationLink(Strings.ComicExplanation.title) {
                 ExplanationView(comicNumber: comic.id)
             }
+            .disabled(viewModel.isLoading)
         }
     }
 
@@ -59,10 +66,11 @@ struct ComicListView: View {
 
     @ViewBuilder
     private var shareLink: some View {
-        if case .loaded(let comic) = viewModel.state {
+        if let comic = currentComic {
             ShareLink(item: URL(string: "https://xkcd.com/\(comic.id)")!) {
                 Image(systemName: Icons.share)
             }
+            .disabled(viewModel.isLoading)
         }
     }
 
@@ -146,6 +154,7 @@ struct ComicListView: View {
         } label: {
             Image(systemName: Icons.shuffle)
         }
+        .disabled(viewModel.isLoading)
     }
 }
 
